@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 이 XML의 구조대로 구현될 클래스의 이름 => Impl클래스를 대체한다. -->
+<mapper namespace="PlanTravelDetailFileJoinMapper">
+
+	<!-- Beans 클래스의 객체이름(id)과 클래스이름(type)을 명시한다. -->
+ 	<resultMap id="PlanTravelFileJoinByDetail" type="study.spring.seoul4u.model.PlanTravelFileJoinByDetail">
+		<result property="memberId" column="member_id" />
+		<result property="planId" column="plan_id" />
+		<result property="planSubject" column="plan_subject" />
+		<result property="startDate" column="start_date" />
+		<result property="term" column="term" />
+		<result property="season" column="season" />
+		<result property="theme" column="theme" />
+		<result property="planLikeSum" column="plan_like_sum" />
+		<result property="planRatingAvg" column="plan_rating_avg" />
+		<result property="planHit" column="plan_hit" />
+		<result property="detailPlanId" column="detail_plan_id" />
+		<result property="day" column="day" />
+		<result property="contentNo" column="content_no" />
+		<result property="travelSubject" column="travel_subject" />
+		<result property="travelSummary" column="travel_summary" />
+		<result property="travelContent" column="travel_content" />
+		<result property="travelAddress" column="travel_address" />
+		<result property="travelLikeSum" column="travel_like_sum" />
+		<result property="travelRatingAvg" column="travel_rating_avg" />
+		<result property="travelHit" column="travel_hit" />
+		<result property="travelMapX" column="travel_map_x" />
+		<result property="travelMapY" column="travel_map_y" />
+		<result property="fileOriginName" column="file_origin_name" />
+		<result property="fileDir" column="file_dir" />
+		<result property="fileName" column="file_name" />
+		<result property="imagePath" column="image_path" />
+	</resultMap>
+	
+	<!-- planInfo에서 여행지 정보 출력할 때 사용 -->
+	<select id="listForPlanInfo" resultType="study.spring.seoul4u.model.PlanTravelFileJoinByDetail" resultMap="PlanTravelFileJoinByDetail">
+<!-- 	SELECT
+		d.member_id AS member_id, p.id AS plan_id, p.subject AS plan_subject,
+		p.start_date AS start_date, p.term AS term, p.season AS season, p.theme AS theme,
+		p.like_sum AS plan_like_sum, p.rating_avg AS plan_rating_avg, p.hit AS plan_hit,
+		d.id AS detail_plan_id, day, content_no,
+		t.subject AS travel_subject, t.summary AS travel_summary, t.content AS travel_content,
+		t.address AS travel_address, t.like_sum AS travel_like_sum,
+		t.rating_avg AS travel_rating_avg, t.hit AS travel_hit,
+		t.map_x AS travel_map_x, t.map_y AS travel_map_y,
+		f.origin_name AS file_origin_name, f.file_dir AS file_dir, f.file_name AS file_name,
+		f.travel_id
+	FROM detail_plan d
+		LEFT OUTER JOIN travel_plan p ON d.travel_plan_id = p.id
+		LEFT OUTER JOIN travel t ON d.travel_id = t.id
+		LEFT OUTER JOIN file f ON d.travel_id = f.travel_id
+	WHERE season != 0 AND theme != 0 AND p.id = #{planId}
+	GROUP BY f.travel_id
+	ORDER BY day ASC, content_no ASC -->
+SELECT t.id as travel_id, p.id as travel_plan_id,
+	d.member_id AS member_id,p.id AS plan_id, p.subject AS plan_subject,
+	DATE_FORMAT(p.start_date, '%Y-%m-%d') AS start_date, p.term AS term, p.season AS season, p.theme AS theme,
+	p.like_sum AS plan_like_sum, p.rating_avg AS plan_rating_avg, p.hit AS plan_hit,
+	d.id AS detail_plan_id, day, content_no,
+	t.subject AS travel_subject, t.summary AS travel_summary, t.content AS travel_content,
+	t.address AS travel_address, t.like_sum AS travel_like_sum,
+	t.rating_avg AS travel_rating_avg, t.hit AS travel_hit,
+	t.map_x AS travel_map_x, t.map_y AS travel_map_y,
+	f.origin_name AS file_origin_name, f.file_dir AS file_dir, f.file_name AS file_name,
+	( SELECT concat(f.file_dir,'/',f.file_name) ) as image_path
+FROM detail_plan d
+LEFT OUTER JOIN travel_plan p ON d.travel_plan_id=p.id
+LEFT OUTER JOIN travel t ON d.travel_id = t.id
+LEFT OUTER JOIN file f ON d.travel_id = f.travel_id
+WHERE p.season != 0 AND p.theme != 0 AND p.id=#{planId}
+GROUP BY d.id
+ORDER BY day ASC, content_no ASC
+	</select>
+	
+</mapper>

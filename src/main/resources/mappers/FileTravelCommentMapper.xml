@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 이 XML의 구조대로 구현될 클래스의 이름 => Impl클래스를 대체한다. -->
+<mapper namespace="FileTravelCommentMapper">
+
+	<!-- Beans 클래스의 객체이름(id)과 클래스이름(type)을 명시한다. -->
+ 	<resultMap id="FileTravelComment" type="study.spring.seoul4u.model.FileTravelComment">
+		<result property="fileId" column="file_id" />
+		<result property="originName" column="origin_name" />
+		<result property="fileDir" column="file_dir" />
+		<result property="fileName" column="file_name" />
+		<result property="travelId" column="travel_id" />
+		<result property="travelCategory" column="travel_category" />
+		<result property="travelSubject" column="travel_subject" />
+		<result property="travelSummary" column="travel_summary" />
+		<result property="travelContent" column="travel_content" />
+		<result property="travelAddress" column="travel_address" />
+		<result property="travelMapX" column="travel_map_x" />
+		<result property="travelMapY" column="travel_map_y" />
+		<result property="travelLikeSum" column="travel_like_sum" />
+		<result property="travelRatingAvg" column="travel_rating_avg" />
+		<result property="travelHit" column="travel_hit" />
+		<result property="commentCount" column="comment_count" />
+		
+		<result property="imagePath" column="image_path" />
+	</resultMap>
+	<!-- planning2에서 여행지 정보 출력할 때 사용 -->
+	<select id="listForPlanning" resultType="study.spring.seoul4u.model.FileTravelComment" resultMap="FileTravelComment">
+<!-- 		SELECT
+			f.id as file_id, origin_name, file_dir, file_name, f.travel_id as travel_id, ( SELECT concat(f.file_dir,'/',f.file_name) ) as image_path,
+			t.category as travel_category, t.subject as travel_subject,
+			t.summary as travel_summary, t.content as travel_content, t.address as travel_address,
+			t.map_x as travel_map_x, t.map_y as travel_map_y,
+			t.like_sum as travel_like_sum, t.hit as travel_hit,
+			(SELECT ROUND(AVG(c.rating),2) FROM comment c WHERE c.travel_id = f.travel_id) as travel_rating_avg,
+			(SELECT COUNT(c.id) FROM comment c WHERE c.travel_id = f.travel_id) as comment_count
+		FROM file f
+			LEFT OUTER JOIN travel t ON f.travel_id = t.id
+			LEFT OUTER JOIN comment c ON f.travel_id = c.travel_id
+		WHERE t.category = #{travelCategory}
+		GROUP BY f.travel_id
+		ORDER BY f.travel_id DESC -->
+			SELECT
+				f.id as file_id, origin_name, file_dir, file_name, t.id as travel_id, ( SELECT concat(f.file_dir,'/',f.file_name) ) as image_path,
+				t.category as travel_category, t.subject as travel_subject,
+				t.summary as travel_summary, t.content as travel_content, t.address as travel_address,
+				t.map_x as travel_map_x, t.map_y as travel_map_y,
+				t.like_sum as travel_like_sum, t.hit as travel_hit,
+				(SELECT ROUND(AVG(c.rating),2) FROM comment c WHERE c.travel_id = t.id) as travel_rating_avg,
+				(SELECT COUNT(c.id) FROM comment c WHERE c.travel_id = t.id) as comment_count
+			FROM travel t
+				LEFT OUTER JOIN file f ON t.id=f.travel_id
+				LEFT OUTER JOIN comment c ON t.id=c.travel_id
+			WHERE t.category = #{travelCategory}
+			GROUP BY t.id
+			ORDER BY t.id DESC		
+	</select>
+	
+</mapper>

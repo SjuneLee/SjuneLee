@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<!-- 이 XML의 구조대로 구현될 클래스의 이름 => Impl클래스를 대체한다. -->
+<mapper namespace="DetailPlanMapper">
+
+    <!-- Beans 클래스의 객체이름(id)과 클래스이름(type)을 명시한다. -->
+    <resultMap id="detail_plan" type="study.spring.seoul4u.model.DetailPlan">
+        <!-- Beans의 멤버변수(property)이름과 대상 테이블의 컬럼(column)을 연결한다. -->
+        <result property="id" column="id" />
+        <result property="day" column="day" />
+        <result property="contentNo" column="content_no" />
+        <result property="memberId" column="member_id" />
+        <result property="travelId" column="travel_id" /> 
+        <result property="travelPlanId" column="travel_plan_id" />
+        <result property="originName" column="origin_name" />
+        <result property="fileDir" column="file_dir" />
+        <result property="fileName" column="file_name" />
+        
+        <result property="imagePath" column="image_path" />
+    </resultMap>
+
+	<!-- 게시글 정보 저장하기 -->
+	<insert id="insertDetailPlan" parameterType="study.spring.seoul4u.model.DetailPlan" 
+		useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO detail_plan (
+			day, content_no, member_id, travel_id, travel_plan_id
+		) VALUES (
+			#{day}, #{contentNo}, #{memberId}, #{travelId}, #{travelPlanId}	
+		)
+	</insert>
+	
+	<!-- 게시물 목록을 조회한다. --> 
+	<select id="selectDetailPlanList" parameterType="study.spring.seoul4u.model.DetailPlan" resultMap="detail_plan">
+		SELECT d.id, d.day, d.content_no, d.member_id, d.travel_id, d.travel_plan_id,
+ 
+			   t.start_date, t.term, t.subject, t.season, t.theme, 	    		  
+               DATE_FORMAT(t.reg_date, '%Y-%m-%d') as reg_date,
+               DATE_FORMAT(t.edit_date, '%Y-%m-%d') as edit_date,
+               t.like_sum, t.rating_avg, t.hit, t.ip_address, t.member_id,
+               
+               f.origin_name, f.file_dir, f.file_name, ( SELECT concat(f.file_dir,'/',f.file_name) ) as image_path,
+               f.content_type, f.file_size, f.reg_date, f.edit_date, f.travel_id
+        FROM   detail_plan d
+        INNER JOIN travel_plan t ON d.travel_plan_id=t.id
+        LEFT OUTER JOIN file f ON d.travel_id=f.travel_id
+        WHERE d.member_id=#{memberId} and d.travel_plan_id=#{travelPlanId}
+        GROUP BY f.travel_id
+		ORDER BY f.travel_id DESC
+	</select>
+	
+	<select id="selectDetailIngPlanList" parameterType="study.spring.seoul4u.model.DetailPlan" resultMap="detail_plan">
+		SELECT d.id, d.day, d.content_no, d.member_id, d.travel_id, d.travel_plan_id,	
+			f.origin_name, f.file_dir, f.file_name, ( SELECT concat(f.file_dir,'/',f.file_name) ) as image_path,
+			f.content_type, f.file_size, f.reg_date, f.edit_date, f.travel_id
+		FROM   detail_plan d
+			INNER JOIN travel_plan t ON d.travel_plan_id=t.id
+		    INNER JOIN file f ON d.travel_id=f.travel_id
+		    WHERE d.member_id=#{memberId}
+		    GROUP BY d.travel_plan_id
+			ORDER BY d.travel_plan_id ASC
+	</select>	
+	
+ 	<select id="selectCategoryList" parameterType="study.spring.seoul4u.model.DetailPlan" resultMap="detail_plan">
+		SELECT d.id, t.subject
+		FROM detail_plan d
+		INNER JOIN travel t ON d.travel_id=t.id
+	</select>
+	
+	<!-- 상세일정 단일조회 -->
+	<select id="selectDetailItem" parameterType="study.spring.seoul4u.model.DetailPlan" resultMap="detail_plan">
+		SELECT day, content_no, member_id, travel_id, travel_plan_id
+		FROM detail_plan
+		WHERE id=#{id}
+	</select>
+	
+	<!-- 상세일정 삭제한다. -->  
+	<delete id="deleteDetailPlan" parameterType="study.spring.seoul4u.model.DetailPlan">
+		DELETE FROM detail_plan 
+		WHERE member_id=#{memberId} and travel_plan_id=#{travelPlanId}
+	</delete> 
+    
+   	<!-- 특정 회원과의 게시물 참조 해제하기 -->
+	<update id="updateDetailPlanMamberOut" parameterType="study.spring.seoul4u.model.TravelPlan">
+	UPDATE 	detail_plan
+	SET 	member_id=NULL
+	WHERE 	member_id=#{memberId}
+	</update>
+	
+	<!-- 여행지 삭제할 때 해당 여행지가 포함된 모든 상세일정을 삭제한다 -->
+	<delete id="deleteDetailAll" parameterType="study.spring.seoul4u.model.DetailPlan">
+		DELETE FROM detail_plan WHERE travel_id=#{travelId}
+	</delete>
+</mapper>

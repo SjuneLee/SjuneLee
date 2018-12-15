@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<!-- 사용자 여행지게시물 mapper입니다 (관리자 여행지게시물 mapper : TravelDocumentMapper)-->
+<mapper namespace="MemberTravelMapper">
+
+    <!-- Beans 클래스의 객체이름(id)과 클래스이름(type)을 명시한다. -->
+    <resultMap id="member_travel" type="study.spring.seoul4u.model.TravelDocument">
+        <!-- Beans의 멤버변수(property)이름과 대상 테이블의 컬럼(column)을 연결한다. -->
+        <result property="id" column="id" />
+        <result property="category" column="category" />
+        <result property="subject" column="subject" />
+        <result property="summary" column="summary" />
+        <result property="content" column="content" />
+        <result property="address" column="address" />
+        <result property="mapX" column="map_x" />
+        <result property="mapY" column="map_y" />
+        <result property="likeSum" column="like_sum" />
+        <result property="ratingAvg" column="rating_avg" />
+        <result property="hit" column="hit" />
+        <result property="regDate" column="reg_date" />
+        <result property="editDate" column="edit_date" />
+        <result property="memberId" column="member_id" />
+        <result property="imagePath" column="image_path" />
+        <result property="search" column="search" />
+    </resultMap>
+    <!-- 게시물 목록을 조회한다. -->
+	<select id="selectMemberTravelList" parameterType="study.spring.seoul4u.model.TravelDocument" 
+		resultMap="member_travel">
+        SELECT id,category,subject,content,member_id,  
+               DATE_FORMAT(reg_date, '%Y-%m-%d') as reg_date
+			,( SELECT concat(file_dir,'/',file_name) FROM file
+			   WHERE travel_id=travel.id
+					 AND
+					 content_type LIKE ('image/%')
+				ORDER BY id ASC LIMIT 0,1
+			) as image_path    
+        FROM   travel
+		
+		<where>
+			category=#{category}			
+		</where>
+		
+		<if test="search != '' ">
+			<if test="search == 'latest'">
+				ORDER  BY id DESC
+			</if>
+			<if test="search == 'last'">
+				ORDER  BY id ASC
+			</if>
+		</if>
+		<if test="search == '' or search == null ">
+			ORDER BY id DESC
+		</if>
+		LIMIT #{limitStart}, #{listCount}	
+  	</select>
+  	
+  		<!-- 조회수 1 증가 -->
+	<update id="updateMemberTravelHit" parameterType="study.spring.seoul4u.model.TravelDocument">
+		UPDATE travel SET hit=hit+1 WHERE category=#{category} AND id=#{id}
+	</update>
+
+	
+	<!-- 전체 게시물 수를 조회한다. -->
+	<select id="selectMemberTravelCount"
+		parameterType="study.spring.seoul4u.model.TravelDocument"
+		resultType="int">
+		SELECT COUNT(id) FROM travel
+ 		<where>
+			category=#{category} 
+		</where> 
+		
+		<if test="search != '' ">
+			<if test="search == 'latest'">
+				ORDER  BY id DESC
+			</if>
+			<if test="search == 'last'">
+				ORDER  BY id ASC
+			</if>
+		</if>
+		
+	</select>
+  	
+</mapper>

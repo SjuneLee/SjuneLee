@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 이 XML의 구조대로 구현될 클래스의 이름 => Impl클래스를 대체한다. -->
+<mapper namespace="MemberQnaMapper">
+
+	<!-- Beans 클래스의 객체이름(id)과 클래스이름(type)을 명시한다. -->
+	<resultMap id="member_qna" type="study.spring.seoul4u.model.Qna">
+		<!-- Beans의 멤버변수(property)이름과 대상 테이블의 컬럼(column)을 연결한다. -->
+		<result property="id" column="id" />
+		<result property="category" column="category" />
+		<result property="qnaAnswerCondition" column="qna_answer_condition" />
+		<result property="qnaSecretCondition" column="qna_secret_condition" />
+		<result property="subject" column="subject" />
+		<result property="content" column="content" />
+		<result property="userId" column="user_id" />
+		<result property="name" column="name" />
+		<result property="regDate" column="reg_date" />
+		<result property="qnaAnswerDate" column="qna_answer_date" />
+		<result property="hit" column="hit" />
+		<result property="memberId" column="member_id" />
+		<result property="search" column="search" />
+		
+		<!-- 관리자 게시판 QNA의 관리자의 댓글이, 고객센터 고객의 질문에 대한 답변에 조회됨 -->
+		<result property="qnaAnswer" column="qna_answer" />
+	</resultMap>
+	
+	<select id="selectMemberQnaList" parameterType="study.spring.seoul4u.model.Qna" resultMap="member_qna">
+		SELECT c.id, c.category, c.qna_answer_condition, c.qna_secret_condition, 
+		c.subject, m.name, c.content as content, DATE_FORMAT(c.reg_date, '%Y-%m-%d') 
+		AS reg_date, c.hit, c.member_id
+		FROM customer_center c
+		LEFT OUTER JOIN member m ON c.member_id=m.id 
+		<where>
+			category = 'qna'
+			<if test="subject != null or content != null">
+				AND (
+					<if test="search == 'subject'">
+						subject LIKE concat('%', #{subject}, '%')
+					</if>
+					<if test="search == 'content'">
+						content LIKE concat('%', #{content}, '%')
+					</if>
+						)
+				</if>
+		</where>
+		ORDER BY id DESC
+		LIMIT #{limitStart}, #{listCount}
+	</select>
+	
+	<select id="selectMemberQnaItem" parameterType="study.spring.seoul4u.model.Qna" resultMap="member_qna">
+		SELECT c.id, c.qna_answer_condition, c.qna_secret_condition, c.qna_answer, c.subject, m.name, m.user_id, 
+		DATE_FORMAT(c.reg_date, '%Y-%m-%d') AS reg_date, c.content, c.hit, c.qna_answer_date
+		FROM customer_center c
+		LEFT OUTER JOIN member m ON c.member_id = m.id
+		WHERE c.id=#{id}
+	</select>
+	
+	<!-- 이전글 정보를 조회한다. -->
+	<select id="selectPrevQna"
+		parameterType="study.spring.seoul4u.model.Qna"
+		resultMap="member_qna">
+		SELECT c.id, c.qna_answer_condition, c.qna_secret_condition, c.qna_answer, c.subject, m.name, m.user_id, 
+		DATE_FORMAT(c.reg_date, '%Y-%m-%d') AS reg_date, c.content, c.hit, c.qna_answer_date, c.member_id
+		FROM customer_center c
+		INNER JOIN member m ON c.member_id = m.id
+		WHERE  category='qna' AND c.id &lt; #{id}
+		ORDER  BY id DESC
+		LIMIT  0, 1
+	</select>
+	
+	<!-- 다음글 정보를 조회한다. -->
+	<select id="selectNextQna"
+		parameterType="study.spring.seoul4u.model.Qna"
+		resultMap="member_qna">
+		SELECT c.id, c.qna_answer_condition, c.qna_secret_condition, c.qna_answer, c.subject, m.name, m.user_id, 
+		DATE_FORMAT(c.reg_date, '%Y-%m-%d') AS reg_date, c.content, c.hit, c.qna_answer_date, c.member_id
+		FROM customer_center c
+		INNER JOIN member m ON c.member_id = m.id
+		WHERE  category='qna' AND c.id &gt; #{id}
+		ORDER  BY id ASC
+		LIMIT  0, 1
+	</select>
+	
+	<!-- 전체 게시물 수를 조회한다. -->
+	<select id="selectMemberQnaCount"
+		parameterType="study.spring.seoul4u.model.Qna"
+		resultType="int">
+		SELECT COUNT(id) FROM customer_center
+		<where>
+			category='qna'
+			<if test="subject != null or content != null">
+				AND (
+					<if test="search == 'subject'">
+						subject LIKE concat('%', #{subject}, '%')
+					</if>
+					<if test="search == 'content'">
+						content LIKE concat('%', #{content}, '%')
+					</if>
+						)
+				</if>
+		</where>
+	</select>
+	
+	<insert id="insertMemberQna" parameterType="study.spring.seoul4u.model.Qna" useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO customer_center (category, subject, content, hit, reg_date, edit_date, ip_address, 
+			qna_answer_condition, qna_secret_condition, qna_answer_date, member_id)	
+		VALUES ( #{category}, #{subject}, #{content}, #{hit}, now(), now(), #{ipAddress}, 
+			#{qnaAnswerCondition}, #{qnaSecretCondition}, now(), #{memberId} )
+	</insert>
+	
+	<delete id="deleteMemberQna" parameterType="study.spring.seoul4u.model.Qna">
+		DELETE FROM customer_center WHERE id=#{id}
+	</delete>
+	
+	<update id="updateMemberQna" parameterType="study.spring.seoul4u.model.Qna">
+		UPDATE customer_center SET subject=#{subject}, content=#{content}
+		WHERE id=#{id}
+<!-- 		<choose>
+			<when test="profileImg == ''">
+				, profile_img=null
+			</when>
+			<when test="profileImg != null">
+				, profile_img=#{profileImg}
+			</when>
+		</choose> -->
+	</update>
+	
+	<!-- 조회수 1 증가 -->
+	<update id="updateMemberQnaHit" parameterType="study.spring.seoul4u.model.Qna">
+		UPDATE customer_center SET hit=hit+1 WHERE id=#{id}
+	</update>
+	
+	<!-- 회원탈퇴시 질문답변게시판 업데이트 -->
+	<update id="updateQnaByMamberOut" parameterType="study.spring.seoul4u.model.Qna">
+	UPDATE 	customer_center
+	SET 	member_id=NULL, edit_date=now()
+	WHERE 	member_id=#{memberId}
+	</update>
+	
+	<!-- 자신이 쓴 글인지 검사 -->
+	<select id="selectCountByMemberId"
+		parameterType="study.spring.seoul4u.model.Qna"
+		resultType="int">
+		SELECT COUNT(id)
+		FROM customer_center
+		WHERE member_id = #{memberId} AND id = #{id}
+	</select>
+	
+</mapper>

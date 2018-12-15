@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 이 XML의 구조대로 구현될 클래스의 이름 => Impl클래스를 대체한다. -->
+<mapper namespace="TravelCommentMapper">
+
+	<!-- Beans 클래스의 객체이름(id)과 클래스이름(type)을 명시한다. -->
+	<resultMap id="TravelComment" type="study.spring.seoul4u.model.Comment">
+		<!-- Beans의 멤버변수(property)이름과 대상 테이블의 컬럼(column)을 연결한다. -->
+		<result property="id" column="id" />
+		<result property="writerId" column="writer_id" />
+		<result property="writerPw" column="writer_pw" />
+		<result property="email" column="email" />
+		<result property="content" column="content" />
+		<result property="rating" column="rating" />
+		<result property="regDate" column="reg_date" />
+		<result property="editDate" column="edit_date" />
+		<result property="ipAddress" column="ip_address" />
+		<result property="categoryComment" column="category_comment" />
+		<result property="memberId" column="member_id" />
+		<result property="travelId" column="travel_id" />
+		<result property="profileImg" column="profile_img" />
+	</resultMap>
+	<!-- 덧글을 입력한다. -->
+	<insert id="insertTravelComment" parameterType="study.spring.seoul4u.model.Comment"
+		useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO comment (
+			writer_id, writer_pw, email,
+			content, rating, reg_date, edit_date, ip_address, 
+			category_comment, member_id, travel_id
+		) VALUES (
+			#{writerId}, #{writerPw}, #{email},
+			#{content}, #{rating}, now(), now(), #{ipAddress},
+			#{categoryComment}, #{memberId}, #{travelId}
+		)
+		
+	</insert>
+	
+	<!-- 덧글 조회 (travel 상세페이지 열릴 때 실행) (프로필 사진 출력(member 테이블의 profile_img)을 위해 member테이블과 조인)-->
+	<select id="selectTravelCommentList" parameterType="study.spring.seoul4u.model.Comment"
+		resultMap="TravelComment">
+		SELECT 
+			c.id AS id, c.writer_id AS writer_id, c.writer_pw AS writer_pw, c.email AS email, c.content AS content,
+			c.rating AS rating,
+			DATE_FORMAT(c.reg_date, '%Y-%m-%d %H:%i:%s') as reg_date,
+			DATE_FORMAT(c.edit_date, '%Y-%m-%d %H:%i:%s') as edit_date,
+			c.ip_address AS ip_address, c.category_comment AS category_comment, 
+			c.member_id AS member_id, c.travel_id AS travel_id, m.profile_img AS profile_img
+		FROM comment c
+		INNER JOIN member m ON c.member_id = m.id
+		WHERE travel_id=#{travelId}
+		ORDER BY id ASC
+	</select>
+	
+	<!-- insertTravelComment 할때 바로 화면에 뿌리기 위해 사용(프로필 사진 출력(member 테이블의 profile_img)을 위해 member테이블과 조인)-->
+	<select id="selectTravelComment" parameterType="study.spring.seoul4u.model.Comment"
+		resultMap="TravelComment">
+		SELECT 
+			c.id AS id, c.writer_id AS writer_id, c.writer_pw AS writer_pw, c.email AS email, c.content AS content,
+			c.rating AS rating,
+			DATE_FORMAT(c.reg_date, '%Y-%m-%d %H:%i:%s') as reg_date,
+			DATE_FORMAT(c.edit_date, '%Y-%m-%d %H:%i:%s') as edit_date,
+			c.ip_address AS ip_address, c.category_comment AS category_comment, 
+			c.member_id AS member_id, c.travel_id AS travel_id, m.profile_img AS profile_img
+		FROM comment c
+		INNER JOIN member m ON c.member_id = m.id
+		WHERE c.id=#{id}
+	</select>
+
+	<!-- 자신의 덧글인지 검사한다 -->
+	<select id="selectTravelCommentCountByMemberId"
+		parameterType="study.spring.seoul4u.model.Comment"
+		resultType="int">
+		SELECT COUNT(id) FROM comment
+		WHERE id=#{id} AND member_id=#{memberId}
+	</select>
+	
+	<!-- 비밀번호를 검사한다. -->
+	<select id="selectTravelCommentCountByPw"
+		parameterType="study.spring.seoul4u.model.Comment"
+		resultType="int">
+		SELECT COUNT(id) FROM comment
+		WHERE id=#{id} AND writer_pw=password(#{writerPw})
+	</select>
+	
+	<!-- 특정 여행지에 대한 댓글 갯수 -->
+	<select id="selectCommentCountByTravelId"
+		parameterType="study.spring.seoul4u.model.Comment"
+		resultType="int">
+		SELECT COUNT(id) FROM comment
+		WHERE travel_id = #{travelId}
+	</select>
+	
+	<!-- 특정 회원이 특정 여행지에 댓글 달았는지 검사 -->
+	<select id="commentCountByMemberIdTravelId"
+		parameterType="study.spring.seoul4u.model.Comment"
+		resultType="int">
+		SELECT COUNT(id) FROM comment
+		WHERE travel_id = #{travelId} AND member_id = #{memberId}
+	</select>
+	
+	<!-- 특정 여행지에 대한 평점 평균(반올림 두자리까지) -->
+	<select id="selectRatingAvgByTravelId"
+		parameterType="study.spring.seoul4u.model.Comment"
+		resultType="float">
+		SELECT ROUND(AVG(rating),2) FROM comment
+		WHERE travel_id = #{travelId}
+	</select>
+	
+	<!-- 덧글 정보 수정하기 -->
+	<update id="updateTravelComment" parameterType="study.spring.seoul4u.model.Comment">
+		UPDATE comment SET
+			content=#{content}, rating=#{rating}, ip_address=#{ipAddress}, edit_date=now()
+		WHERE id=#{id}	
+	</update>
+	
+	<!-- 덧글 삭제 하기 -->
+	<delete id="deleteTravelComment" parameterType="study.spring.seoul4u.model.Comment">
+		DELETE FROM comment WHERE id=#{id}
+	</delete>
+	
+	<!-- 특정 게시물에 속한 모든 덧글을 삭제한다 -->
+	<delete id="deleteCommentAll" parameterType="study.spring.seoul4u.model.Comment">
+		DELETE FROM comment WHERE travel_id=#{travelId}
+	</delete>
+</mapper>

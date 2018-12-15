@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<!-- 이 XML의 구조대로 구현될 클래스의 이름 => Impl클래스를 대체한다. -->
+<mapper namespace="TravelPlanMapper">
+
+    <!-- Beans 클래스의 객체이름(id)과 클래스이름(type)을 명시한다. -->
+    <resultMap id="travel_plan" type="study.spring.seoul4u.model.TravelPlan">
+        <!-- Beans의 멤버변수(property)이름과 대상 테이블의 컬럼(column)을 연결한다. -->
+        <result property="id" column="id" />
+        <result property="startDate" column="start_date" />
+        <result property="term" column="term" />
+        <result property="subject" column="subject" />
+        <result property="season" column="season" /> 
+        <result property="theme" column="theme" /> 
+        <result property="regDate" column="reg_date" />
+        <result property="editDate" column="edit_date" />
+        <result property="likeSum" column="like_sum"/>
+        <result property="ratingAvg" column="rating_avg"/>
+        <result property="hit" column="hit" />
+        <result property="ipAddress" column="ip_address" />
+        <result property="memberId" column="member_id" />
+        <result property="imagePath" column="image_path" />
+        <result property="travelId" column="travel_id" />
+        <result property="travelPlanId" column="travel_plan_id" />
+        <result property="travelDays" column="travelDays" />
+        <result property="travelMoment" column="travelMoment" />
+        <result property="travelTheme" column="travelTheme" />
+        <result property="keyword" column="keyword" />          
+        <result property="rating" column="rating" />       
+    </resultMap>
+    
+
+ 	<!-- 게시글 정보 저장하기 -->
+	<insert id="insertTravelPlan" parameterType="study.spring.seoul4u.model.TravelPlan" 
+		useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO travel_plan (
+			start_date, term, subject, season, theme, reg_date, edit_date, like_sum, rating_avg, hit, ip_address, member_id
+		) VALUES (
+			#{startDate}, #{term}, #{subject}, #{season}, #{theme}, now(), now(), 0, 0, 0, #{ipAddress}, #{memberId}
+		)
+	 
+	</insert>
+	
+	<!-- 게시물 목록을 조회한다. -->
+	<select id="selectTravelPlanList" parameterType="study.spring.seoul4u.model.TravelPlan" resultMap="travel_plan">
+	    SELECT id, start_date, term, subject, season, theme, 	    		  
+               DATE_FORMAT(reg_date, '%Y-%m-%d') as reg_date,
+               DATE_FORMAT(edit_date, '%Y-%m-%d') as edit_date,
+               like_sum, rating_avg, hit, ip_address, member_id,
+               (SELECT concat(file_dir,'/',file_name) 
+               FROM file
+               WHERE content_type LIKE ('image/%') AND
+               member_id=#{memberId}
+               LIMIT 0,1) as image_path
+              
+        FROM   travel_plan
+		WHERE member_id=#{memberId}
+	</select>
+	
+<!-- 	<select id="selectTravelPlanFileList" parameterType="study.spring.seoul4u.model.TravelPlan" resultMap="travel_plan">
+		SELECT 
+	</select> -->
+
+	<!-- 전체검색 여행일정 게시물 조회한다. -->
+	<select id="selectTravelPlanSearch" parameterType="study.spring.seoul4u.model.TravelPlan" resultMap="travel_plan">
+	    SELECT id, start_date, term, subject, season, theme, 	    		  
+               DATE_FORMAT(reg_date, '%Y-%m-%d') as reg_date,
+               DATE_FORMAT(edit_date, '%Y-%m-%d') as edit_date,
+               like_sum, rating_avg, hit, ip_address, member_id
+              
+        FROM   travel_plan
+		<where>
+			subject LIKE concat('%', #{subject}, '%')
+ 		</where>
+	</select>
+		
+	<select id="selectGalleryPlanList" parameterType="study.spring.seoul4u.model.TravelPlan" resultMap="travel_plan">
+	    SELECT p.id, p.start_date, p.term, p.subject, p.season, p.theme, p.like_sum, p.rating_avg, p.hit, d.travel_id as travel_id ,p.like_sum 
+               ,(  SELECT concat(f.file_dir,'/',f.file_name) 
+			   FROM file f  
+			   WHERE f.content_type LIKE ('image/%')
+			   AND f.travel_id= t.id
+			   LIMIT 0,1
+			) as image_path             
+       FROM detail_plan d
+       INNER JOIN travel t ON d.travel_id = t.id
+       INNER JOIN travel_plan p ON d.travel_plan_id = p.id 
+       WHERE p.season != 0 AND p.theme != 0
+
+
+				<if test="travelDays == 'all' and travelMoment == 10  and travelTheme != 10">
+			  		AND theme = #{travelTheme}
+			  	</if>
+			  	<if test="travelDays == 'all' and travelMoment != 10  and travelTheme != 10">
+			  		AND season = #{travelMoment} AND theme = #{travelTheme}
+			  	</if>			  	
+			  	<if test="travelDays == 'all' and travelMoment != 10  and travelTheme == 10">
+			  		AND season = #{travelMoment}
+			  	</if>
+
+			  	<if test="travelDays == 'ten' and travelMoment == 10  and travelTheme == 10">
+			  		AND term &lt; 9
+			  	</if>
+			  	<if test="travelDays == 'ten' and travelMoment == 10  and travelTheme != 10">
+			  		AND term &lt; 9 AND theme = #{travelTheme}
+			  	</if>
+			  	<if test="travelDays == 'ten' and travelMoment != 10  and travelTheme == 10">
+			  		AND term &lt; 9 AND season = #{travelMoment}
+			  	</if>					
+			  	<if test="travelDays == 'ten' and travelMoment != 10  and travelTheme != 10">
+			  		AND term &lt; 9 AND season = #{travelMoment} AND theme = #{travelTheme}
+			  	</if>
+
+			  	<if test="travelDays == 'tenOver' and travelMoment == 10  and travelTheme == 10">
+			  		AND term &gt; 10
+			  	</if>
+			  	<if test="travelDays == 'tenOver' and travelMoment == 10  and travelTheme != 10">
+			  		AND term &gt; 10 AND theme = #{travelTheme}
+			  	</if>
+			  	<if test="travelDays == 'tenOver' and travelMoment != 10  and travelTheme == 10">
+			  		AND term &gt; 10 AND season = #{travelMoment}
+			  	</if>					
+			  	<if test="travelDays == 'tenOver' and travelMoment != 10  and travelTheme != 10">
+			  		AND term &gt; 10 AND season = #{travelMoment} AND theme = #{travelTheme}
+			  	</if>
+		GROUP BY p.subject
+	
+	</select>
+			
+	<!-- 게시물 하나에 대한 정보를 조회한다. -->
+	<select id="selectTravelPlan" parameterType="study.spring.seoul4u.model.TravelPlan" resultMap="travel_plan">
+			SELECT id, start_date, term, subject, season, theme,    
+			   DATE_FORMAT(reg_date, '%Y-%m-%d %H:%i:%s') as reg_date, 
+			   DATE_FORMAT(edit_date, '%Y-%m-%d %H:%i:%s') as edit_date, 
+			   like_sum, rating_avg, hit, ip_address, member_id
+		FROM   travel_plan
+		WHERE  id=#{id}
+	</select>
+	
+	
+	<!-- 조회수 1 증가 -->
+	<update id="updateTravelPlanHit" parameterType="study.spring.seoul4u.model.TravelPlan">
+	UPDATE travel_plan SET hit=hit+1 WHERE id=#{id}
+	</update>
+	
+	<!-- 게시글 삭제 하기 -->
+	<delete id="deleteTravelPlan" parameterType="study.spring.seoul4u.model.TravelPlan">
+	DELETE FROM travel_plan WHERE id=#{id}
+	</delete>
+	
+	<!-- 게시글 정보 수정하기 -->
+	<update id="updateTravelPlan" parameterType="study.spring.seoul4u.model.TravelPlan">	
+	UPDATE 	travel_plan 
+	SET
+ 
+			<!-- start_date=#{startDate}, -->
+			term=#{term},
+			<!-- subject=#{subject}, -->
+			season=#{season},
+			theme=#{theme}
+			<!-- edit_date=#{editDate}, -->
+			<!-- ip_address=#{ipAddress} -->
+			
+	WHERE 	id=#{id}
+	</update>
+
+	<!-- 여행지 좋아요 클릭시 like_sum 업데이트 -->
+	<update id="plusLikeSum" parameterType="study.spring.seoul4u.model.TravelPlan">
+	UPDATE travel_plan SET like_sum = like_sum + 1
+	WHERE id=#{id}
+	</update>
+	
+	<!-- 여행지 좋아요 해제시 like_sum 업데이트 -->
+	<update id="minusLikeSum" parameterType="study.spring.seoul4u.model.TravelPlan">
+	UPDATE travel_plan SET like_sum = like_sum - 1
+	WHERE id=#{id}
+	</update>
+	
+	<!-- 특정 회원과의 게시물 참조 해제하기 -->
+	<update id="updatePlanMamberOut" parameterType="study.spring.seoul4u.model.TravelPlan">
+	UPDATE 	travel_plan
+	SET 	member_id=NULL, edit_date=now()
+	WHERE 	member_id=#{memberId}
+	</update>
+
+	<!-- rating 추가/삭제/수정시 rating_avg 업데이트  -->
+	<update id="updateTravelPlanRatingAvg" parameterType="study.spring.seoul4u.model.TravelPlan">
+		update travel_plan
+		set  rating_avg = ( SELECT ROUND(AVG(c.rating),2) FROM comment c WHERE c.travel_plan_id = #{travelPlanId} )
+		WHERE id = #{travelPlanId}
+	</update>		
+</mapper>

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 이 XML의 구조대로 구현될 클래스의 이름 => Impl클래스를 대체한다. -->
+<mapper namespace="LikesTravelPlanMapper">
+
+	<!-- Beans 클래스의 객체이름(id)과 클래스이름(type)을 명시한다. -->
+ 	<resultMap id="likes_plan_travel" type="study.spring.seoul4u.model.Likes">
+		<result property="id" column="id" />
+		<result property="memberId" column="member_id" />
+		<result property="travelId" column="travel_id" />
+		<result property="travelPlanId" column="travel_plan_id" />
+		<result property="likeSum" column="like_sum" />
+		<result property="imagePath" column="image_path" />
+		<result property="category" column="category" />
+        <result property="subject" column="subject" />
+	</resultMap>
+	
+	<select id="travelPlanCount" resultType="study.spring.seoul4u.model.Likes" resultMap="likes_plan_travel">
+		SELECT t.like_sum as like_sum
+		FROM likes l
+		INNER JOIN travel_plan t ON l.travel_plan_id=t.id
+	</select>
+	<!-- 여행일정 좋아요 표시 검사 -->
+	<select id="likesCountBytravelPlanId"
+		parameterType="study.spring.seoul4u.model.Likes" resultType="int">
+		SELECT COUNT(id) FROM likes
+		WHERE member_id=#{memberId} AND travel_plan_id=#{travelPlanId}
+	</select>
+	
+	<!-- 여행일정 좋아요 했을 때 -->
+	<insert id="insertLikes" parameterType="study.spring.seoul4u.model.Likes" useGeneratedKeys="true" keyProperty="id">
+		INSERT INTO likes (member_id, travel_plan_id) VALUES (#{memberId}, #{travelPlanId})
+	</insert>
+	
+	<!-- 여행일정 좋아요 취소 -->
+	<delete id="deleteLikes" parameterType="study.spring.seoul4u.model.Likes">
+		DELETE FROM likes WHERE member_id=#{memberId} AND travel_plan_id=#{travelPlanId}
+	</delete>
+	
+	<update id="updateLikes" parameterType="study.spring.seoul4u.model.Likes">
+		UPDATE travel_plan SET like_sum = like_sum + 1
+	</update>
+
+	<!-- 좋아한 일정 목록을 조회한다. -->
+	<select id="selectLikePlanList" parameterType="study.spring.seoul4u.model.Likes" resultMap="likes_plan_travel">
+
+       SELECT l.id as id, l.member_id as member_id, p.subject as subject,
+			l.travel_plan_id as travel_plan_id, d.travel_id as travel_id
+			,(   SELECT concat(f.file_dir,'/',f.file_name) 
+					   FROM file f  
+					   WHERE f.content_type LIKE ('image/%')
+					   AND f.travel_id= d.travel_id
+					   LIMIT 0,1
+					) as image_path    
+		FROM   likes l
+		INNER JOIN travel_plan p ON l.travel_plan_id = p.id
+		INNER JOIN detail_plan d ON l.travel_plan_id = d.travel_plan_id
+		WHERE l.member_id =#{memberId}
+		GROUP BY l.travel_plan_id
+		ORDER BY l.id ASC;
+		
+  	</select>
+
+		
+	<!-- 전체 게시물 수를 조회한다. -->
+	<select id="selectLikePlanCount"
+		parameterType="study.spring.seoul4u.model.Likes"
+		resultType="int">
+		SELECT COUNT(id) FROM likes 		
+		ORDER  BY id DESC		
+	</select>
+
+	<!-- 좋아한 일정 삭제 하기 -->
+	<delete id="deleteLikePlan" parameterType="study.spring.seoul4u.model.Likes">
+		DELETE FROM likes WHERE id=#{id}
+	</delete>	
+	
+	<!-- 게시글에 속한 파일 전체 삭제 하기 -->
+	<delete id="deleteLikePlanAll" parameterType="study.spring.seoul4u.model.Likes">
+		DELETE FROM likes WHERE travel_plan_id=#{travelPlanId}
+	</delete>
+	
+	<!-- 회원탈퇴시 like 삭제 -->
+	<delete id="deletePlanLikeByMemberId" parameterType="study.spring.seoul4u.model.Likes">
+		DELETE FROM likes WHERE member_id=#{memberId}
+	</delete>
+	
+</mapper>
